@@ -25,10 +25,10 @@ class CompanyActionsTest extends \PHPUnit\Framework\TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-            $this->companyActions = new CompanyActions(
-                $this->contextInterfaceMock,
-                $this->uiComponentFactoryMock,
-                $this->urlInterfaceMock);
+        $this->companyActions = new CompanyActions(
+            $this->contextInterfaceMock,
+            $this->uiComponentFactoryMock,
+            $this->urlInterfaceMock);
     }
 
     /**

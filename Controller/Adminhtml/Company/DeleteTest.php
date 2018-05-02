@@ -14,36 +14,56 @@ class DeleteTest extends \PHPUnit\Framework\TestCase
 
     protected $registryMock;
 
-    protected $companyRepositoryInterfaceMock;
+    protected $companyRepositoryMock;
 
-    protected $companyInterfaceFactoryMock;
+    protected $companyFactoryMock;
 
-    protected $companyInterfaceMock;
+    protected $companyMock;
+
+    protected $resultRedirectFactoryMock;
+
+    protected $getRequestMock;
 
     protected $deleteController;
 
+    protected $deleteControllerMock;
+
+    protected $companyGetName = 'Some model name';
+
     protected function setUp()
     {
-        /*
-            public function __construct(
-                \Magento\Backend\App\Action\Context $context,
-                \Magento\Framework\View\Result\PageFactory $resultPageFactory,
-                \Magento\Framework\Controller\Result\ForwardFactory $resultForwardFactory,
-                \Magento\Framework\Registry $coreRegistry,
-                \Socoda\Company\Api\CompanyRepositoryInterface $companyRepository,
-                \Socoda\Company\Api\Data\CompanyInterfaceFactory $companyFactory
-        */
 
-
-        /**
-         *  $this->resultRedirectFactory->create();
-         *                              ->setPath();
-         *  $this->getRequest->getParam('id', false);
-         */
         $this->contextMock = $this->getMockBuilder(\Magento\Backend\App\Action\Context::class)
+            ->setMethods(['getResultRedirectFactory', 'getMessageManager'])
             ->disableOriginalConstructor()
             ->getMock();
-            
+
+        $this->resultRedirectFactoryMock = $this->getMockBuilder(\Magento\Framework\Controller\Result\RedirectFactory::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $this->messageManagerMock = $this->getMockBuilder(\Magento\Framework\Message\ManagerInterfaceFuctory::class)
+            ->setMethods(['addError', 'addSuccess'])
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $this->contextMock->expects($this->once())
+            ->method('getResultRedirectFactory')
+            ->willReturn($this->resultRedirectFactoryMock);
+
+        $this->contextMock->expects($this->once())
+            ->method('getMessageManager')
+            ->willReturn($this->messageManagerMock);
+
+        $this->resultRedirectMock = $this->getMockBuilder(\Magento\Framework\Controller\Result\Redirect::class)
+            ->setMethods(['setPath'])
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $this->resultRedirectFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($this->resultRedirectMock);
+
         $this->pageFactoryMock = $this->getMockBuilder(\Magento\Framework\View\Result\PageFactory::class)
             ->disableOriginalConstructor()
             ->getMock();
@@ -56,49 +76,181 @@ class DeleteTest extends \PHPUnit\Framework\TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->companyRepositoryInterfaceMock = $this->getMockBuilder(\Socoda\Company\Api\CompanyRepositoryInterface::class)
+        $this->companyRepositoryMock = $this->getMockBuilder(\Socoda\Company\Api\CompanyRepositoryInterface::class)
             ->disableOriginalConstructor()
+            ->setMethods(['get', 'save', 'delete', 'deleteById'])
             ->getMock();
 
-
-
-        $this->companyInterfaceFactoryMock = $this->getMockBuilder(\Socoda\Company\Api\Data\CompanyInterfaceFactory::class)
+        $this->companyFactoryMock = $this->getMockBuilder(\Socoda\Company\Api\Data\CompanyInterfaceFactory::class)
             ->setMethods(['create'])
             ->disableOriginalConstructor()
             ->getMock();
-        $this->companyInterfaceMock = $this->getMockBuilder(\Socoda\Company\Api\Data\CompanyInterface::class)
+        $this->companyMock = $this->getMockBuilder(\Socoda\Company\Api\Data\CompanyInterface::class)
+            ->setMethods(['getId', 'setId', 'getName', 'setName'])
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->deleteController = new \Socoda\Company\Controller\Adminhtml\Company\Delete(
-            $this->contextMock,
-            $this->pageFactoryMock,
-            $this->forwardFactoryMock,
-            $this->registryMock,
-            $this->companyRepositoryInterfaceMock,
-            $this->companyInterfaceFactoryMock);
+        $this->getRequestMock = $this->getMockBuilder(\Magento\Framework\App\RequestInterfaceFactory::class)
+            ->setMethods(['getParam'])
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $this->deleteControllerMock = $this->getMockBuilder(\Socoda\Company\Controller\Adminhtml\Company\Delete::class)
+            ->setConstructorArgs([
+                $this->contextMock,
+                $this->pageFactoryMock,
+                $this->forwardFactoryMock,
+                $this->registryMock,
+                $this->companyRepositoryMock,
+                $this->companyFactoryMock])
+            ->setMethods(['getRequest'])
+            ->getMock();
     }
 
-    public function testDeleteAction()
+    // enters first if($identifier) and enters second if(!$model->getId())
+    public function testDeleteActionNoModelGetId()
     {
-        $this->companyInterfaceFactoryMock->expects($this->once())
+
+        $this->deleteControllerMock->expects($this->once())
+            ->method('getRequest')
+            ->willReturn($this->getRequestMock);
+
+        $this->getRequestMock->expects($this->once())
+            ->method('getParam')
+            ->with('id', false)
+            ->willReturn(1);
+
+        $this->companyFactoryMock->expects($this->once())
             ->method('create')
-            ->with($this->companyInterfaceMock);
+            ->willReturn($this->companyMock);
 
-        //$this->deleteController->execute();
+        $this->companyRepositoryMock->expects($this->once())
+            ->method('get')
+            ->with(1)
+            ->willReturn($this->companyMock);
 
-//var_dump($this->companyInterfaceMock);
-//var_dump('_____________________________________________________________________');
-//var_dump($this->deleteController);
-//var_dump('_____________________________________________________________________');
-//var_dump(get_class_methods($this->deleteController));
+        $this->companyMock->expects($this->once())
+            ->method('getId')
+            ->willReturn(null);     //null or '1'
 
+        $this->messageManagerMock->expects($this->once())
+            ->method('addError')
+            ->with(__('This company no longer exists.'));
 
-        //$this->assertSame($this->companyInterfaceMock, $this->deleteController->execute());
+        $this->messageManagerMock->expects($this->never())
+            ->method('addSuccess');
+
+        $this->resultRedirectMock->expects($this->once())
+            ->method('setPath')
+            ->with('*/*/index')
+            ->willReturnSelf();
+
+        $this->assertSame($this->resultRedirectMock, $this->deleteControllerMock->execute());
 
     }
 
-/*
-sudo -uwww-data php /var/www/html/magento2/vendor/phpunit/phpunit/phpunit -c /var/www/html/magento2/dev/tests/unit/phpunit.xml.dist /var/www/html/magento2/app/code/Socoda/Company/Test/Unit/
-*/
+    // enters first if($identifier) and enters second if(!$model->getId())
+    public function testDeleteActionModelGetIdExistsAndTry()
+    {
+
+        $this->deleteControllerMock->expects($this->once())
+            ->method('getRequest')
+            ->willReturn($this->getRequestMock);
+
+        $this->getRequestMock->expects($this->once())
+            ->method('getParam')
+            ->with('id', false)
+            ->willReturn(1);        // 1 or false
+
+        $this->companyFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($this->companyMock);
+
+        $this->companyRepositoryMock->expects($this->once())
+            ->method('get')
+            ->with(1)
+            ->willReturn($this->companyMock);
+
+        $this->companyMock->expects($this->once())
+            ->method('getId')
+            ->willReturn('1');     //'1' or null
+
+        $this->companyRepositoryMock->expects($this->once())
+            ->method('delete')
+            ->with($this->companyMock)
+            ->willReturn(true);
+
+        $this->messageManagerMock->expects($this->once())
+            ->method('addSuccess')
+            ->with(__('You deleted the company %1.', $this->companyGetName));
+
+        $this->companyMock->expects($this->once())
+            ->method('getName')
+            ->willReturn($this->companyGetName);     //'1' or null
+
+        $this->messageManagerMock->expects($this->never())
+            ->method('addError');
+
+        $this->resultRedirectMock->expects($this->once())
+            ->method('setPath')
+            ->with('*/*/index')
+            ->willReturnSelf();
+
+        $this->assertSame($this->resultRedirectMock, $this->deleteControllerMock->execute());
+
+    }
+
+    // enters first if($identifier) and enters second if(!$model->getId())
+    public function testDeleteActionModelGetIdExistsAndThrowsException()
+    {
+        $errorMsg = 'Can\'t delete company';
+
+        $this->deleteControllerMock->expects($this->exactly(2))
+            ->method('getRequest')
+            ->willReturn($this->getRequestMock);
+
+        $this->getRequestMock->expects($this->at(0))
+                  ->method('getParam')
+                  ->with('id', false)
+                  ->willReturn(1);
+        $this->getRequestMock->expects($this->at(1))
+                  ->method('getParam')
+                  ->with('id')
+                  ->willReturn(1);
+        $this->getRequestMock->expects($this->exactly(2))
+            ->method('getParam');
+
+
+        $this->companyFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($this->companyMock);
+
+        $this->companyRepositoryMock->expects($this->once())
+            ->method('get')
+            ->with(1)
+            ->willReturn($this->companyMock);
+
+        $this->companyMock->expects($this->once())
+            ->method('getId')
+            ->willReturn('1');
+
+        $this->companyRepositoryMock->expects($this->once())
+            ->method('delete')
+            ->with($this->companyMock)
+            ->willThrowException(new \Exception(__($errorMsg)));
+
+        $this->messageManagerMock->expects($this->once())
+            ->method('addError')
+            ->with($errorMsg);
+
+        $this->messageManagerMock->expects($this->never())
+            ->method('addSuccess');
+
+        $this->resultRedirectMock->expects($this->once())
+            ->method('setPath')
+            ->with('*/*/edit')
+            ->willReturnSelf();
+
+        $this->assertSame($this->resultRedirectMock, $this->deleteControllerMock->execute());
+    }
 }

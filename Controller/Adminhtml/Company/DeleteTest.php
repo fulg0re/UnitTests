@@ -6,6 +6,7 @@ use Socoda\Company\Controller\Adminhtml\Company\Delete;
 
 class DeleteTest extends \PHPUnit\Framework\TestCase
 {
+
     protected $contextMock;
 
     protected $pageFactoryMock;
@@ -42,7 +43,7 @@ class DeleteTest extends \PHPUnit\Framework\TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->messageManagerMock = $this->getMockBuilder(\Magento\Framework\Message\ManagerInterfaceFuctory::class)
+        $this->messageManagerMock = $this->getMockBuilder(\Magento\Framework\Message\ManagerInterfaceFactory::class)
             ->setMethods(['addError', 'addSuccess'])
             ->disableOriginalConstructor()
             ->getMock();
@@ -135,7 +136,7 @@ class DeleteTest extends \PHPUnit\Framework\TestCase
 
         $this->messageManagerMock->expects($this->once())
             ->method('addError')
-            ->with(__('This company no longer exists.'));
+            ->with(__('This company no longer exists.'));       //new \Magento\Framework\Phrase('Edit')
 
         $this->messageManagerMock->expects($this->never())
             ->method('addSuccess');
@@ -181,7 +182,7 @@ class DeleteTest extends \PHPUnit\Framework\TestCase
             ->willReturn(true);
 
         $this->messageManagerMock->expects($this->once())
-            ->method('addSuccess')
+            ->method('addSuccess')                      // new \Magento\Framework\Phrase('Edit')
             ->with(__('You deleted the company %1.', $this->companyGetName));
 
         $this->companyMock->expects($this->once())
@@ -236,7 +237,7 @@ class DeleteTest extends \PHPUnit\Framework\TestCase
 
         $this->companyRepositoryMock->expects($this->once())
             ->method('delete')
-            ->with($this->companyMock)
+            ->with($this->companyMock)              // new \Magento\Framework\Phrase('Edit')
             ->willThrowException(new \Exception(__($errorMsg)));
 
         $this->messageManagerMock->expects($this->once())

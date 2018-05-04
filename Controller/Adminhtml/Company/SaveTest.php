@@ -6,47 +6,90 @@ use Socoda\Company\Controller\Adminhtml\Company\Save;
 
 class SaveTest extends \PHPUnit\Framework\TestCase
 {
-
+    /**
+     * @var \Magento\Backend\App\Action\Context
+     */
     protected $contextMock;
 
+    /**
+     * @var \Magento\Framework\View\Result\PageFactory
+     */
     protected $resultPageFactoryMock;
 
+    /**
+     * @var \Magento\Framework\Controller\Result\ForwardFactory
+     */
     protected $resultForwardFactoryMock;
 
+    /**
+     * @var \Magento\Framework\Registry
+     */
     protected $coreRegistryMock;
 
+    /**
+     * @var \Socoda\Company\Api\CompanyRepositoryInterface
+     */
     protected $companyRepositoryMock;
 
+    /**
+     * @var \Socoda\Company\Api\Data\CompanyInterfaceFactory
+     */
     protected $companyFactoryMock;
 
+    /**
+     * @var \Socoda\Company\Controller\Adminhtml\Company\Save
+     */
     protected $saveControllerMock;
 
+    /**
+     * @var \Magento\Framework\Controller\Result\RedirectFactory
+     */
     protected $resultRedirectFactoryMock;
 
+    /**
+     * @var \Magento\Framework\Controller\Result\Redirect
+     */
     protected $resultRedirectMock;
 
+    /**
+     * @var \Magento\Framework\App\RequestInterfaceFactory
+     */
     protected $getRequestMock;
 
+    /**
+     * @var \Magento\Framework\Message\ManagerInterfaceFactory
+     */
     protected $messageManagerMock;
 
+    /**
+     * @var \Magento\Framework\ObjectManagerInterface
+     */
     protected $objectManagerMock;
 
+    /**
+     * @var \Magento\Backend\Model\Session
+     */
     protected $sessionMock;
 
-    /*
-    public function __construct(
-        \Magento\Backend\App\Action\Context $context,
-        \Magento\Framework\View\Result\PageFactory $resultPageFactory,
-        \Magento\Framework\Controller\Result\ForwardFactory $resultForwardFactory,
-        \Magento\Framework\Registry $coreRegistry,
-        \Socoda\Company\Api\CompanyRepositoryInterface $companyRepository,
-        \Socoda\Company\Api\Data\CompanyInterfaceFactory $companyFactory,
-        array $postDataHandlers = []
-    ) {
-        parent::__construct($context, $resultPageFactory, $resultForwardFactory, $coreRegistry, $companyRepository, $companyFactory);
-        $this->postDataHandlers = $postDataHandlers;
+    /**
+     * @var \Socoda\Company\Api\CompanyPostDataHandlerInterface
+     */
+    protected $postDataHandlersMock;
+   
+    protected function makeMockObject(array $postDataHandlers)
+    {
+        $this->saveControllerMock = $this->getMockBuilder(\Socoda\Company\Controller\Adminhtml\Company\Save::class)
+            ->setConstructorArgs([
+                $this->contextMock,
+                $this->resultPageFactoryMock,
+                $this->resultForwardFactoryMock,
+                $this->coreRegistryMock,
+                $this->companyRepositoryMock,
+                $this->companyFactoryMock,
+                $postDataHandlers])
+            ->setMethods(['getRequest'])
+            ->getMock();
     }
-    */
 
     protected function setUp()
     {
@@ -80,7 +123,7 @@ class SaveTest extends \PHPUnit\Framework\TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->contextMock->expects($this->once())          //****
+        $this->contextMock->expects($this->once())
             ->method('getObjectManager')
             ->willReturn($this->objectManagerMock);
 
@@ -130,21 +173,17 @@ class SaveTest extends \PHPUnit\Framework\TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->saveControllerMock = $this->getMockBuilder(\Socoda\Company\Controller\Adminhtml\Company\Save::class)
-            ->setConstructorArgs([
-                $this->contextMock,
-                $this->resultPageFactoryMock,
-                $this->resultForwardFactoryMock,
-                $this->coreRegistryMock,
-                $this->companyRepositoryMock,
-                $this->companyFactoryMock])
-            ->setMethods(['getRequest'])
+        $this->postDataHandlersMock = $this->getMockBuilder(\Socoda\Company\Api\CompanyPostDataHandlerInterface::class)
+            ->setMethods(['getData'])
+            ->disableOriginalConstructor()
             ->getMock();
 
     }
-
+    
     public function testWithNoData()
     {
+
+        $this->makeMockObject([]);
 
         $this->saveControllerMock->expects($this->exactly(2))
             ->method('getRequest')
@@ -152,12 +191,12 @@ class SaveTest extends \PHPUnit\Framework\TestCase
 
         $this->getRequestMock->expects($this->once())
             ->method('getPostValue')
-            ->willReturn(null);    //->willReturnSelf() or null;
+            ->willReturn(null);
 
         $this->getRequestMock->expects($this->once())
             ->method('getParam')
             ->with('back', false)
-            ->willReturn('back');        // 'back' or false
+            ->willReturn('back');
 
         $this->resultRedirectMock->expects($this->once())
             ->method('setPath')
@@ -165,10 +204,9 @@ class SaveTest extends \PHPUnit\Framework\TestCase
             ->willReturnSelf();
 
         $this->assertSame($this->resultRedirectMock, $this->saveControllerMock->execute());
-        //$this->saveControllerMock->execute();
     }
 
-    public function testWithDataExistsAndNoSaveData()
+    public function testWithDataExistsAndNoSaveDataAndThrowException()
     {
         $redirectBack = 3;
         $identifier = false;
@@ -177,36 +215,34 @@ class SaveTest extends \PHPUnit\Framework\TestCase
             'id' => 1
         ];
 
+        $this->makeMockObject([]);
+
         $this->saveControllerMock->expects($this->exactly(4))
             ->method('getRequest')
             ->willReturn($this->getRequestMock);
 
         $this->getRequestMock->expects($this->once())
             ->method('getPostValue')
-            ->willReturn($this->getRequestMock);            // $data
-                                                            // ->willReturnSelf() or null;
+            ->willReturn($this->getRequestMock);
 
         $this->getRequestMock->expects($this->at(1))
-                  ->method('getParam')
-                  ->with('back', false)                     // $redirectBack = 3;
-                  ->willReturn($redirectBack);
+            ->method('getParam')
+            ->with('back', false)
+            ->willReturn($redirectBack);
         $this->getRequestMock->expects($this->at(2))
-                  ->method('getParam')
-                  ->with('id')                              // $identifier
-                  ->willReturn($identifier);
+            ->method('getParam')
+            ->with('id')
+            ->willReturn($identifier);
         $this->getRequestMock->expects($this->at(3))
-                  ->method('getParam')                      // $storeId
-                                                                    // DEFAULT_STORE_ID = 0
-                  ->with('store_id', \Magento\Store\Model\Store::DEFAULT_STORE_ID)
-                  ->willReturn($storeId);
+            ->method('getParam')
+            ->with('store_id', \Magento\Store\Model\Store::DEFAULT_STORE_ID)
+            ->willReturn($storeId);
         $this->getRequestMock->expects($this->exactly(3))
             ->method('getParam');
 
         $this->companyFactoryMock->expects($this->once())
             ->method('create')
             ->willReturn($this->companyMock);
-
-        // FOREACH();
 
         $this->companyMock->expects($this->once())
             ->method('setData')
@@ -243,10 +279,222 @@ class SaveTest extends \PHPUnit\Framework\TestCase
             ->willReturnSelf();
 
         $this->assertSame($this->resultRedirectMock, $this->saveControllerMock->execute());
-        //$this->saveControllerMock->execute();
     }
 
-/*
-sudo -uwww-data php /var/www/html/magento2/vendor/phpunit/phpunit/phpunit -c /var/www/html/magento2/dev/tests/unit/phpunit.xml.dist /var/www/html/magento2/app/code/Socoda/Company/Test/Unit/Controller/Adminhtml/Company/SaveTest.php
-*/
+    public function testWithIdentifierExistsAndNoMadelGetId()
+    {
+        $redirectBack = 3;
+        $identifier = 1;
+        $storeId = 1;
+
+        $this->makeMockObject([]);
+
+        $this->saveControllerMock->expects($this->exactly(4))
+            ->method('getRequest')
+            ->willReturn($this->getRequestMock);
+
+        $this->getRequestMock->expects($this->once())
+            ->method('getPostValue')
+            ->willReturnSelf();
+
+        $this->getRequestMock->expects($this->at(1))
+            ->method('getParam')
+            ->with('back', false)
+            ->willReturn($redirectBack);
+        $this->getRequestMock->expects($this->at(2))
+            ->method('getParam')
+            ->with('id')
+            ->willReturn($identifier);
+        $this->getRequestMock->expects($this->at(3))
+            ->method('getParam')
+            ->with('store_id', \Magento\Store\Model\Store::DEFAULT_STORE_ID)
+            ->willReturn($storeId);
+        $this->getRequestMock->expects($this->exactly(3))
+            ->method('getParam');
+
+        $this->companyFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($this->companyMock);
+
+        $this->companyRepositoryMock->expects($this->once())
+            ->method('get')
+            ->with($identifier)
+            ->willReturn($this->companyMock);
+
+        $this->companyMock->expects($this->once())
+            ->method('getId')
+            ->willReturn(null);
+
+        $this->messageManagerMock->expects($this->once())
+            ->method('addError')
+            ->with(new \Magento\Framework\Phrase('This company no longer exists.'));
+
+        $this->resultRedirectMock->expects($this->once())
+            ->method('setPath')
+            ->with('*/*/')
+            ->willReturnSelf();
+
+        $this->assertSame($this->resultRedirectMock, $this->saveControllerMock->execute());
+    }
+
+    public function testTryAndNoException()
+    {
+        $redirectBack = false;
+        $identifier = null;
+        $storeId = 1;
+        $modelGetName = ['Some model name'];
+
+        $this->makeMockObject([]);
+
+        $this->saveControllerMock->expects($this->exactly(4))
+            ->method('getRequest')
+            ->willReturn($this->getRequestMock);
+
+        $this->getRequestMock->expects($this->once())
+            ->method('getPostValue')
+            ->willReturnSelf();
+
+        $this->getRequestMock->expects($this->at(1))
+            ->method('getParam')
+            ->with('back', false)
+            ->willReturn($redirectBack);
+        $this->getRequestMock->expects($this->at(2))
+            ->method('getParam')
+            ->with('id')
+            ->willReturn($identifier);
+        $this->getRequestMock->expects($this->at(3))
+            ->method('getParam')
+            ->with('store_id', \Magento\Store\Model\Store::DEFAULT_STORE_ID)
+            ->willReturn($storeId);
+        $this->getRequestMock->expects($this->exactly(3))
+            ->method('getParam');
+
+        $this->companyFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($this->companyMock);
+
+        $this->postDataHandlersMock->expects($this->never())
+            ->method('getData');
+
+        $this->companyMock->expects($this->once())
+            ->method('setData')
+            ->with($this->getRequestMock);
+
+        $this->companyMock->expects($this->once())
+            ->method('setStoreId')
+            ->with($storeId);
+
+        $this->companyRepositoryMock->expects($this->once())
+            ->method('save')
+            ->with($this->companyMock);
+
+        $this->companyMock->expects($this->once())
+            ->method('getName')
+            ->willReturn($modelGetName);
+
+        $this->messageManagerMock->expects($this->once())
+            ->method('addSuccessMessage')
+            ->with(new \Magento\Framework\Phrase('You saved the company %1.', $modelGetName));
+
+        $this->objectManagerMock->expects($this->once())
+            ->method('get')
+            ->with('Magento\Backend\Model\Session')
+            ->willReturn($this->sessionMock);
+
+        $this->sessionMock->expects($this->once())
+            ->method('setFormData')
+            ->with(false);
+
+        $this->resultRedirectMock->expects($this->once())
+            ->method('setPath')
+            ->with('*/*/')
+            ->willReturnSelf();
+
+        $this->assertSame($this->resultRedirectMock, $this->saveControllerMock->execute());
+    }
+
+    public function testForeachAndRedirectBackExistsAndStoreIdNotNull()
+    {
+        $redirectBack = 'back';
+        $identifier = null;
+        $storeId = 1;
+        $modelGetName = ['Some model name'];
+        $redirectParams = [
+            'id' => 999,
+            'store' => 1
+        ];
+
+        $this->makeMockObject([$this->postDataHandlersMock]);
+
+        $this->saveControllerMock->expects($this->exactly(4))
+            ->method('getRequest')
+            ->willReturn($this->getRequestMock);
+
+        $this->getRequestMock->expects($this->once())
+            ->method('getPostValue')
+            ->willReturnSelf();
+
+        $this->getRequestMock->expects($this->at(1))
+            ->method('getParam')
+            ->with('back', false)
+            ->willReturn($redirectBack);
+        $this->getRequestMock->expects($this->at(2))
+            ->method('getParam')
+            ->with('id')
+            ->willReturn($identifier);
+        $this->getRequestMock->expects($this->at(3))
+            ->method('getParam')
+            ->with('store_id', \Magento\Store\Model\Store::DEFAULT_STORE_ID)
+            ->willReturn($storeId);
+        $this->getRequestMock->expects($this->exactly(3))
+            ->method('getParam');
+
+        $this->companyFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($this->companyMock);
+
+        $this->postDataHandlersMock->expects($this->once())
+            ->method('getData')
+            ->willReturn($this->getRequestMock);
+
+        $this->companyMock->expects($this->once())
+            ->method('setData')
+            ->with($this->getRequestMock);
+
+        $this->companyMock->expects($this->once())
+            ->method('setStoreId')
+            ->with($storeId);
+
+        $this->companyRepositoryMock->expects($this->once())
+            ->method('save')
+            ->with($this->companyMock);
+
+        $this->companyMock->expects($this->once())
+            ->method('getName')
+            ->willReturn($modelGetName);
+
+        $this->messageManagerMock->expects($this->once())
+            ->method('addSuccessMessage')
+            ->with(new \Magento\Framework\Phrase('You saved the company %1.', $modelGetName));
+
+        $this->objectManagerMock->expects($this->once())
+            ->method('get')
+            ->with('Magento\Backend\Model\Session')
+            ->willReturn($this->sessionMock);
+
+        $this->sessionMock->expects($this->once())
+            ->method('setFormData')
+            ->with(false);
+
+        $this->companyMock->expects($this->once())
+            ->method('getId')
+            ->willReturn(999);
+
+        $this->resultRedirectMock->expects($this->once())
+            ->method('setPath')
+            ->with('*/*/edit', $redirectParams)
+            ->willReturnSelf();
+
+        $this->assertSame($this->resultRedirectMock, $this->saveControllerMock->execute());
+    }
 }

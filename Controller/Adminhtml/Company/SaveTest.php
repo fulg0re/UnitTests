@@ -74,7 +74,12 @@ class SaveTest extends \PHPUnit\Framework\TestCase
     /**
      * @var \Socoda\Company\Api\CompanyPostDataHandlerInterface
      */
-    protected $postDataHandlersMock;
+    protected $firstPostDataHandlerMock;
+
+    /**
+     * @var \Socoda\Company\Api\CompanyPostDataHandlerInterface
+     */
+    protected $secondPostDataHandlerMock;
    
     protected function makeMockObject(array $postDataHandlers)
     {
@@ -173,7 +178,12 @@ class SaveTest extends \PHPUnit\Framework\TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->postDataHandlersMock = $this->getMockBuilder(\Socoda\Company\Api\CompanyPostDataHandlerInterface::class)
+        $this->firstPostDataHandlerMock = $this->getMockBuilder(\Socoda\Company\Api\CompanyPostDataHandlerInterface::class)
+            ->setMethods(['getData'])
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $this->secondPostDataHandlerMock = $this->getMockBuilder(\Socoda\Company\Api\CompanyPostDataHandlerInterface::class)
             ->setMethods(['getData'])
             ->disableOriginalConstructor()
             ->getMock();
@@ -373,7 +383,10 @@ class SaveTest extends \PHPUnit\Framework\TestCase
             ->method('create')
             ->willReturn($this->companyMock);
 
-        $this->postDataHandlersMock->expects($this->never())
+        $this->firstPostDataHandlerMock->expects($this->never())
+            ->method('getData');
+
+        $this->secondPostDataHandlerMock->expects($this->never())
             ->method('getData');
 
         $this->companyMock->expects($this->once())
@@ -424,7 +437,9 @@ class SaveTest extends \PHPUnit\Framework\TestCase
             'store' => 1
         ];
 
-        $this->makeMockObject([$this->postDataHandlersMock]);
+        $this->makeMockObject([
+            $this->firstPostDataHandlerMock,
+            $this->secondPostDataHandlerMock]);
 
         $this->saveControllerMock->expects($this->exactly(4))
             ->method('getRequest')
@@ -453,7 +468,10 @@ class SaveTest extends \PHPUnit\Framework\TestCase
             ->method('create')
             ->willReturn($this->companyMock);
 
-        $this->postDataHandlersMock->expects($this->once())
+        $this->firstPostDataHandlerMock->expects($this->once())
+            ->method('getData')
+            ->willReturn($this->getRequestMock);
+        $this->secondPostDataHandlerMock->expects($this->once())
             ->method('getData')
             ->willReturn($this->getRequestMock);
 
